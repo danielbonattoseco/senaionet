@@ -106,7 +106,7 @@ def generate_html(token):
     <title>Dashboard Demo</title>
     <style>
         body {{ font-family: system-ui; margin: 0; padding: 20px; background: #f5f5f5; }}
-        .container {{ max-width: 1200px; margin: 0 auto; height:calc(100vh - 40px) }}
+        .container {{ width: 100%; margin: 0 auto; height:calc(100vh - 40px) }}
     </style>
 </head>
 <body>
