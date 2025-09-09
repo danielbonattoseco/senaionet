@@ -139,7 +139,7 @@ def main():
     try:
         token = get_scoped_token()
         html = generate_html(token)
-        components.html(html, height=800, scrolling=True)
+        components.html(html, height=800, scrolling=True, width=None)
     except Exception as e:
         st.error(f"Erro ao carregar dashboard: {e}")
 
