@@ -129,6 +129,24 @@ def generate_html(token):
 # Streamlit app
 # -----------------------------------------------------------------------------
 def main():
+
+    st.markdown(
+    """
+    <style>
+        .block-container {
+            padding-left: 0rem;
+            padding-right: 0rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            max-width: 100%;
+        }
+        iframe {
+            width: 100% !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True)
+    
     missing = [k for k, v in CONFIG.items() if not v]
     if missing:
         st.error(f"Missing config values: {', '.join(missing)}")
