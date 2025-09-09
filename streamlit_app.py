@@ -122,6 +122,13 @@ def generate_html(token):
         }});
         dashboard.initialize();
     </script>
+
+    <iframe
+  src="https://adb-1450927065906591.11.azuredatabricks.net/embed/dashboardsv3/01f08a659f7115efb0fe2f2bab0a9eb0?o=1450927065906591"
+  width="100%"
+  height="600"
+  frameborder="0">
+</iframe>
 </body>
 </html>"""
 
