@@ -6,7 +6,8 @@ import json
 import base64
 import urllib.request
 import urllib.parse
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import streamlit as st
+import streamlit.components.v1 as components
 
 # -----------------------------------------------------------------------------
 # Config
@@ -19,7 +20,6 @@ CONFIG = {
     "external_viewer_id": os.environ.get("EXTERNAL_VIEWER_ID"),
     "external_value": os.environ.get("EXTERNAL_VALUE"),
     "workspace_id": os.environ.get("WORKSPACE_ID"),
-    "port": int(os.environ.get("PORT", 3000)),
 }
 
 basic_auth = base64.b64encode(
@@ -40,21 +40,17 @@ def http_request(url, method="GET", headers=None, body=None):
             body = body.encode()
         req.data = body
 
-    try:
-        with urllib.request.urlopen(req) as resp:
-            data = resp.read().decode()
-            try:
-                return {"data": json.loads(data)}
-            except json.JSONDecodeError:
-                return {"data": data}
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"HTTP {e.code}: {e.read().decode()}") from None
+    with urllib.request.urlopen(req) as resp:
+        data = resp.read().decode()
+        try:
+            return {"data": json.loads(data)}
+        except json.JSONDecodeError:
+            return {"data": data}
 
 # -----------------------------------------------------------------------------
 # Token logic
 # -----------------------------------------------------------------------------
 def get_scoped_token():
-    # 1. Get all-api token
     oidc_res = http_request(
         f"{CONFIG['instance_url']}/oidc/v1/token",
         method="POST",
@@ -69,7 +65,6 @@ def get_scoped_token():
     )
     oidc_token = oidc_res["data"]["access_token"]
 
-    # 2. Get token info
     token_info_url = (
         f"{CONFIG['instance_url']}/api/2.0/lakeview/dashboards/"
         f"{CONFIG['dashboard_id']}/published/tokeninfo"
@@ -81,7 +76,6 @@ def get_scoped_token():
         headers={"Authorization": f"Bearer {oidc_token}"}
     )["data"]
 
-    # 3. Generate scoped token
     params = token_info.copy()
     authorization_details = params.pop("authorization_details", None)
     params.update({
@@ -132,42 +126,22 @@ def generate_html(token):
 </html>"""
 
 # -----------------------------------------------------------------------------
-# HTTP server
+# Streamlit app
 # -----------------------------------------------------------------------------
-class RequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path != "/":
-            self.send_response(404)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-            self.wfile.write(b"Not Found")
-            return
-
-        try:
-            token = get_scoped_token()
-            html = generate_html(token)
-            status = 200
-        except Exception as e:
-            html = f"<h1>Error</h1><p>{e}</p>"
-            status = 500
-
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html")
-        self.end_headers()
-        self.wfile.write(html.encode())
-
-def start_server():
+def main():
     missing = [k for k, v in CONFIG.items() if not v]
     if missing:
-        print(f"Missing: {', '.join(missing)}", file=sys.stderr)
-        sys.exit(1)
+        st.error(f"Missing config values: {', '.join(missing)}")
+        st.stop()
 
-    server = HTTPServer(("localhost", CONFIG["port"]), RequestHandler)
-    print(f":rocket: Server running on http://localhost:{CONFIG['port']}")
+    st.title("📊 Databricks Dashboard Embed")
+
     try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        sys.exit(0)
+        token = get_scoped_token()
+        html = generate_html(token)
+        components.html(html, height=800, scrolling=True)
+    except Exception as e:
+        st.error(f"Erro ao carregar dashboard: {e}")
 
 if __name__ == "__main__":
-    start_server()
+    main()
